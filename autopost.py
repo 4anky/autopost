@@ -6,6 +6,13 @@ from bs4 import BeautifulSoup
 from vk_api import VkApi, VkUpload
 
 
+def set_variables():
+    with open(file="local_settings", mode="r") as settings:
+        for setting in settings.readlines():
+            variable, value = tuple(setting.rstrip().split("="))
+            globals()[variable] = value
+
+
 def save_random_image(url, tag, attr, image_name):
     html = get(url=url).text
     all_image_links = BeautifulSoup(html, "html.parser").find_all(tag, attrs={attr: True})
@@ -32,11 +39,8 @@ def delete_image(image_name):
 
 
 LOGIN, PASSWORD, GROUP_ID, IMAGE_NAME, URL, TAG, ATTRIBUTE = None, None, None, None, None, None, None
-with open(file="local_settings", mode="r") as settings:
-    for param in settings.readlines():
-        variable, value = tuple(param.rstrip().split("="))
-        globals()[variable] = value
 
+set_variables()
 save_random_image(url=URL, tag=TAG, attr=ATTRIBUTE, image_name=IMAGE_NAME)
 add_post(login=LOGIN, password=PASSWORD, group_id=GROUP_ID, image_name=IMAGE_NAME)
 delete_image(image_name=IMAGE_NAME)
