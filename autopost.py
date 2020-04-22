@@ -25,7 +25,7 @@ def save_random_image(url, tag, attr, image_name):
 
 def add_post(login, password, group_id, image_name):
     vk_session = VkApi(login, password)
-    vk_session.auth(token_only=True)
+    vk_session.auth()
 
     upload = VkUpload(vk_session)
     photo = upload.photo_wall(photos=image_name, group_id=abs(int(group_id)))
