@@ -1,26 +1,17 @@
 from os import path, remove
-from random import choice
-from requests import get
 
-from bs4 import BeautifulSoup
+from requests import get
 from vk_api import VkApi, VkUpload
 
-
-def set_variables():
-    with open(file="local_settings", mode="r") as settings:
-        for setting in settings.readlines():
-            variable, value = tuple(setting.rstrip().split("="))
-            globals()[variable] = value
+import data
 
 
-def save_random_image(url, tag, attr, image_name):
-    html = get(url=url).text
-    all_image_links = BeautifulSoup(html, "html.parser").find_all(tag, attrs={attr: True})
-    collection = [f"{url[:-4]}{image_link[attr]}" for image_link in all_image_links if "/sn/" in image_link[attr]]
-
-    image = get(choice(seq=collection)).content
-    with open(file=image_name, mode="wb") as file:
-        file.write(image)
+def save_image(url, db_path, select_query, update_query):
+    link = data.get_random_link(db_path=db_path, select_query=select_query, update_query=update_query)
+    image_path = f"{data.IMAGE_NAME}{link[-4:]}"
+    with open(file=image_path, mode="wb") as file:
+        file.write(get(url=f"{url}{link}").content)
+    return image_path
 
 
 def add_post(login, password, group_id, image_name):
@@ -38,9 +29,7 @@ def delete_image(image_name):
     remove(path.join(path.abspath(path.dirname(__file__)), image_name))
 
 
-LOGIN, PASSWORD, GROUP_ID, IMAGE_NAME, URL, TAG, ATTRIBUTE = None, None, None, None, None, None, None
-
-set_variables()
-save_random_image(url=URL, tag=TAG, attr=ATTRIBUTE, image_name=IMAGE_NAME)
-add_post(login=LOGIN, password=PASSWORD, group_id=GROUP_ID, image_name=IMAGE_NAME)
-delete_image(image_name=IMAGE_NAME)
+data.set_variables()
+image = save_image(url=data.URL, db_path=data.DB_PATH, select_query=data.SELECT_QUERY, update_query=data.UPDATE_QUERY)
+add_post(login=data.LOGIN, password=data.PASSWORD, group_id=data.GROUP_ID, image_name=image)
+delete_image(image_name=image)
