@@ -3,6 +3,7 @@ __pycache__/
 venv/
 additional/
 config/
+logs/
 *.json
 *.sh
 *.db
