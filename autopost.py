@@ -7,6 +7,8 @@ from vk_api import VkApi, VkUpload, exceptions
 import data
 
 
+logging.basicConfig(level=logging.INFO)
+
 script_name = path.basename(__file__)
 post_logger = logging.getLogger(name=script_name)
 post_logger.setLevel(level=logging.INFO)

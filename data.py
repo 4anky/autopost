@@ -8,6 +8,8 @@ from re import split
 LOGIN, PASSWORD, GROUP_ID, IMAGE_NAME, DB_PATH, URL, PARTITION = None, None, None, None, None, None, None
 INSERT_QUERY, SELECT_QUERY, UPDATE_QUERY, GET_STATS = None, None, None, None
 
+logging.basicConfig(level=logging.INFO)
+
 script_name = path.basename(__file__)
 data_logger = logging.getLogger(name=script_name)
 data_logger.setLevel(level=logging.INFO)

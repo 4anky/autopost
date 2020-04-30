@@ -7,6 +7,8 @@ from requests import get
 import data
 
 
+logging.basicConfig(level=logging.INFO)
+
 script_name = path.basename(__file__)
 parse_logger = logging.getLogger(name=script_name)
 parse_logger.setLevel(level=logging.INFO)
