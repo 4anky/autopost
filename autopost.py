@@ -22,8 +22,10 @@ post_logger.addHandler(hdlr=file_handler)
 
 
 def hash_tags_from_file(file):
-    all_hash_tags = tuple(map(lambda ht: ht.strip(), open(file=file, mode="r").readlines()))
-    res = list(choices(population=all_hash_tags, k=randint(6, 12)))
+    with open(file=file, mode="r") as ht_file:
+        all_hash_tags = ht_file.read().split("\n")
+    ht_number = randint(9, 15)
+    res = list(choices(population=all_hash_tags, k=ht_number))
     res.insert(0, "#synceyes")
     return " ".join(res)
 
