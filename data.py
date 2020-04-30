@@ -5,7 +5,7 @@ from sqlite3 import Error
 from re import split
 
 
-LOGIN, PASSWORD, GROUP_ID, IMAGE_NAME, DB_PATH, URL, PARTITION = None, None, None, None, None, None, None
+LOGIN, PASSWORD, GROUP_ID, IMAGE_NAME, DB_PATH, HT_FILE, URL, PARTITION = None, None, None, None, None, None, None, None
 INSERT_QUERY, SELECT_QUERY, UPDATE_QUERY, GET_STATS = None, None, None, None
 
 logging.basicConfig(level=logging.INFO)

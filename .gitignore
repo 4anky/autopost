@@ -4,6 +4,7 @@ venv/
 additional/
 config/
 logs/
+hash_tags
 *.json
 *.sh
 *.db

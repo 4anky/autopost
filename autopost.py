@@ -1,5 +1,6 @@
 import logging
 from os import path, remove
+from random import choices, randint
 
 from requests import get
 from vk_api import VkApi, VkUpload, exceptions
@@ -20,6 +21,13 @@ file_handler.setFormatter(fmt=formatter)
 post_logger.addHandler(hdlr=file_handler)
 
 
+def hash_tags_from_file(file):
+    all_hash_tags = tuple(map(lambda ht: ht.strip(), open(file=file, mode="r").readlines()))
+    res = list(choices(population=all_hash_tags, k=randint(6, 12)))
+    res.insert(0, "#synceyes")
+    return " ".join(res)
+
+
 def save_image(url, db_path, select_query, update_query):
     link = data.get_random_link(db_path=db_path, select_query=select_query, update_query=update_query)
     image_path = f"{data.IMAGE_NAME}{link[-4:]}"
@@ -32,7 +40,7 @@ def save_image(url, db_path, select_query, update_query):
     return image_path
 
 
-def add_post(login, password, group_id, image_name):
+def add_post(login, password, group_id, image_name, message):
     vk_session, photo = None, None
     try:
         vk_session = VkApi(login, password)
@@ -47,7 +55,10 @@ def add_post(login, password, group_id, image_name):
     except exceptions:
         post_logger.error(msg="Не удалось загрузить фотографию на сервер VK")
     else:
-        vk.wall.post(owner_id=int(group_id), from_group=1, attachments=f"photo{photo[0]['owner_id']}_{photo[0]['id']}")
+        vk.wall.post(owner_id=int(group_id),
+                     from_group=1,
+                     message=message,
+                     attachments=f"photo{photo[0]['owner_id']}_{photo[0]['id']}")
         post_logger.info(msg="Пост с изображением опубликован")
 
 
@@ -62,5 +73,9 @@ def delete_image(image_name):
 
 data.set_variables()
 image = save_image(url=data.URL, db_path=data.DB_PATH, select_query=data.SELECT_QUERY, update_query=data.UPDATE_QUERY)
-add_post(login=data.LOGIN, password=data.PASSWORD, group_id=data.GROUP_ID, image_name=image)
+add_post(login=data.LOGIN,
+         password=data.PASSWORD,
+         group_id=data.GROUP_ID,
+         image_name=image,
+         message=hash_tags_from_file(file=data.HT_FILE))
 delete_image(image_name=image)
