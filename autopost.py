@@ -45,7 +45,14 @@ def save_image(url, db_path, select_query, update_query):
 def add_post(login, password, group_id, image_name, message):
     vk_session, photo = None, None
     try:
+        vk_file_handler = logging.FileHandler(filename=f"logs/{path.splitext(script_name)[0]}.log")
+        vk_formatter = logging.Formatter(
+            fmt="%(asctime)s - %(name)s - %(levelname)s — %(funcName)s:%(lineno)d - %(message)s"
+        )
+        vk_file_handler.setFormatter(fmt=vk_formatter)
+
         vk_session = VkApi(login, password)
+        vk_session.logger.addHandler(hdlr=vk_file_handler)
         vk_session.auth()
     except exceptions.AuthError:
         post_logger.error(msg="Не удалось пройти аутентификацию VK")
