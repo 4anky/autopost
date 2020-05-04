@@ -4,8 +4,6 @@ from os import path
 
 from requests import get
 
-import data
-
 
 logging.basicConfig(level=logging.INFO)
 
@@ -42,20 +40,5 @@ def get_images_from_2ch_section(url, section):
         else:
             if page == 1:
                 parse_logger.error(msg=f"Парсер не посетил ни одной страницы (status_code: {response.status_code})")
-            else:
-                parse_logger.info(msg=f"Парсер посетил {page - 1} страниц, обнаружил {len(links)} картинок")
             break
     return links
-
-
-data.set_variables()
-stats_before = data.get_db_stats(db_path=data.DB_PATH, get_query=data.GET_STATS)
-
-image_links = get_images_from_2ch_section(url=data.URL, section=data.PARTITION)
-data.links_to_db(db_path=data.DB_PATH, query=data.INSERT_QUERY, links=image_links)
-
-stats_after = data.get_db_stats(db_path=data.DB_PATH, get_query=data.GET_STATS)
-if not (stats_after[0] - stats_before[0]):
-    parse_logger.warning(msg="Запас неиспользованных картинок остался прежним")
-else:
-    parse_logger.info(f"Запас неиспользованных картинок пополнился на {stats_after[0] - stats_before[0]} штук")

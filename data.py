@@ -6,7 +6,6 @@ from re import split
 
 
 LOGIN, PASSWORD, GROUP_ID, IMAGE_NAME, DB_PATH, HT_FILE, URL, PARTITION = None, None, None, None, None, None, None, None
-INSERT_QUERY, SELECT_QUERY, UPDATE_QUERY, GET_STATS = None, None, None, None
 
 logging.basicConfig(level=logging.INFO)
 
@@ -41,48 +40,38 @@ def create_connection(db_path):
         return connection
 
 
-def links_to_db(db_path, query, links):
+def links_to_db(db_path, links):
     with create_connection(db_path=db_path) as connection:
+        connection.row_factory = lambda c, row: row[0]
         cursor = connection.cursor()
         try:
             for link in links:
-                cursor.execute(query, (link, 0))
+                cursor.execute("INSERT OR IGNORE INTO images_bank(url, was_used) VALUES (?, ?)", (link, 0))
         except Error:
             data_logger.error(msg=Error)
         else:
             connection.commit()
+            cursor.execute("SELECT COUNT(url) FROM images_bank WHERE was_used = 0")
+            return cursor.fetchone()
 
 
-def get_random_link(db_path, select_query, update_query):
-    connection = create_connection(db_path=db_path)
-    connection.row_factory = lambda c, row: row[0]
-    cursor = connection.cursor()
-    random_link = None
-    try:
-        cursor.execute(select_query)
-    except Error:
-        data_logger.error(msg=Error)
-    else:
-        random_link = cursor.fetchone()
-        if random_link:
-            cursor.execute(update_query, (random_link,))
-            connection.commit()
-    finally:
-        connection.close()
-    return random_link
+def get_random_link(db_path):
+    not_used_number, random_link = None, None
+    with create_connection(db_path=db_path) as connection:
+        connection.row_factory = lambda c, row: row[0]
+        cursor = connection.cursor()
 
-
-def get_db_stats(db_path, get_query):
-    connection = create_connection(db_path=db_path)
-    cursor = connection.cursor()
-    stats = {}
-    try:
-        cursor.execute(get_query)
-    except Error:
-        data_logger.error(msg=Error)
-    else:
-        for was_used, url_number in cursor.fetchall():
-            stats[was_used] = url_number
-    finally:
-        connection.close()
-    return stats
+        try:
+            cursor.execute("SELECT * "
+                           "FROM (SELECT url FROM images_bank WHERE was_used = 0 ORDER BY RANDOM() LIMIT 1) "
+                           "UNION "
+                           "SELECT * "
+                           "FROM (SELECT COUNT(url) FROM images_bank WHERE was_used = 0)")
+        except Error:
+            data_logger.error(msg=Error)
+        else:
+            not_used_number, random_link = tuple(cursor.fetchall())
+            if random_link:
+                cursor.execute("UPDATE images_bank SET was_used = 1 WHERE url = ?", (random_link,))
+                connection.commit()
+    return not_used_number, random_link

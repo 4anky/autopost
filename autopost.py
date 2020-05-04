@@ -30,8 +30,8 @@ def hash_tags_from_file(file):
     return " ".join(res)
 
 
-def save_image(url, db_path, select_query, update_query):
-    link = data.get_random_link(db_path=db_path, select_query=select_query, update_query=update_query)
+def save_image(url, db_path):
+    not_used_number, link = data.get_random_link(db_path=db_path)
     image_path = f"{data.IMAGE_NAME}{link[-4:]}"
     with open(file=image_path, mode="wb") as file:
         file.write(get(url=f"{url}{link}").content)
@@ -39,7 +39,7 @@ def save_image(url, db_path, select_query, update_query):
         post_logger.info(msg="Изображение сохранилось на сервере скрипта")
     else:
         post_logger.error(msg="Не удалось сохранить изображение")
-    return image_path
+    return not_used_number, image_path
 
 
 def add_post(login, password, group_id, image_name, message):
@@ -61,8 +61,8 @@ def add_post(login, password, group_id, image_name, message):
     vk = vk_session.get_api()
     try:
         photo = upload.photo_wall(photos=image_name, group_id=abs(int(group_id)))
-    except exceptions:
-        post_logger.error(msg="Не удалось загрузить фотографию на сервер VK")
+    except exceptions.ApiError:
+        post_logger.exception(msg="Не удалось загрузить фотографию на сервер VK")
     else:
         vk.wall.post(owner_id=int(group_id),
                      from_group=1,
@@ -78,13 +78,3 @@ def delete_image(image_name):
         post_logger.error(msg="Не удалось удалить изображение с сервера скрипта")
     else:
         post_logger.info(msg="Изображение успешно удалено с сервера скрипта")
-
-
-data.set_variables()
-image = save_image(url=data.URL, db_path=data.DB_PATH, select_query=data.SELECT_QUERY, update_query=data.UPDATE_QUERY)
-add_post(login=data.LOGIN,
-         password=data.PASSWORD,
-         group_id=data.GROUP_ID,
-         image_name=image,
-         message=hash_tags_from_file(file=data.HT_FILE))
-delete_image(image_name=image)
