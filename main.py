@@ -29,7 +29,7 @@ if image:
                       message=autopost.hash_tags_from_file(file=data.HT_FILE))
     autopost.delete_image(image_name=image)
 
-if not_used_number < 200:
+if not_used_number < 2000:
     image_links = image_parser.get_images_from_2ch_section(url=data.URL, section=data.PARTITION)
     not_used_now = data.links_to_db(db_path=data.DB_PATH, links=image_links)
     if not_used_now - not_used_number:

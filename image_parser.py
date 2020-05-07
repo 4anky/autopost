@@ -27,18 +27,28 @@ def check_vk_requirements(media_file):
 
 
 def get_images_from_2ch_section(url, section):
-    links = set()
+    # Получаем номера всех тредов в указанной секции 2ch.hk
+    threads_no = set()
     for page in count(start=1, step=1):
         response = get(url=f"{url}/{section}/{page}.json")
         if response.status_code == 200:
             threads = response.json()['threads']
             for thread in threads:
-                for post in thread['posts']:
-                    for media in post['files']:
-                        if check_vk_requirements(media_file=media):
-                            links.add(media['path'])
+                threads_no.add(thread['thread_num'])
         else:
             if page == 1:
                 parse_logger.error(msg=f"Парсер не посетил ни одной страницы (status_code: {response.status_code})")
             break
+
+    # Получаем url всех картинок из каждого треда
+    links = set()
+    for thread in threads_no:
+        posts = get(url=f"{url}/{section}/res/{thread}.json").json()['threads'][0]['posts']
+        for post in posts:
+            for media in post['files']:
+                if check_vk_requirements(media_file=media):
+                    links.add(media['path'])
     return links
+
+
+print(len(get_images_from_2ch_section(url="https://2ch.hk", section="sn")))
