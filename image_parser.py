@@ -43,12 +43,10 @@ def get_images_from_2ch_section(url, section):
     # Получаем url всех картинок из каждого треда
     links = set()
     for thread in threads_no:
-        posts = get(url=f"{url}/{section}/res/{thread}.json").json()['threads'][0]['posts']
+        thread = get(url=f"{url}/{section}/res/{thread}.json").json()
+        posts = thread['threads'][0]['posts']
         for post in posts:
             for media in post['files']:
                 if check_vk_requirements(media_file=media):
                     links.add(media['path'])
     return links
-
-
-print(len(get_images_from_2ch_section(url="https://2ch.hk", section="sn")))

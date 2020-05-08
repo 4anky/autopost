@@ -1,11 +1,13 @@
 import logging
-import sqlite3
 from os import path, scandir
-from sqlite3 import Error
+from psycopg2 import Error
 from re import split
+import psycopg2
 
-
-LOGIN, PASSWORD, GROUP_ID, IMAGE_NAME, DB_PATH, HT_FILE, URL, PARTITION = None, None, None, None, None, None, None, None
+LOGIN, PASSWORD, GROUP_ID = None, None, None
+IMAGE_NAME, DB_PATH, HT_FILE = None, None, None
+URL, PARTITION = None, None
+PG_HOST, PG_DATABASE, PG_USER, PG_PASSWORD, PG_PORT = None, None, None, None, None
 
 logging.basicConfig(level=logging.INFO)
 
@@ -31,47 +33,49 @@ def set_variables():
             data_logger.error(msg=f"Не найден файл {file}")
 
 
-def create_connection(db_path):
+def create_connection():
     try:
-        connection = sqlite3.connect(database=f"file:{db_path}?mode=rw", uri=True)
-    except sqlite3.OperationalError as error:
+        connection = psycopg2.connect(
+            host=PG_HOST,
+            database=PG_DATABASE,
+            user=PG_USER,
+            password=PG_PASSWORD,
+            port=PG_PORT
+        )
+    except psycopg2.OperationalError as error:
         data_logger.error(msg=error)
     else:
         return connection
 
 
-def links_to_db(db_path, links):
-    with create_connection(db_path=db_path) as connection:
+def links_to_db(links):
+    with create_connection() as connection:
         connection.row_factory = lambda c, row: row[0]
         cursor = connection.cursor()
         try:
             for link in links:
-                cursor.execute("INSERT OR IGNORE INTO images_bank(url, was_used) VALUES (?, ?)", (link, 0))
+                cursor.execute("INSERT OR IGNORE INTO images_bank(url, was_used) VALUES ($1, $2)", (link, False))
         except Error:
             data_logger.error(msg=Error)
         else:
             connection.commit()
-            cursor.execute("SELECT COUNT(url) FROM images_bank WHERE was_used = 0")
+            cursor.execute("SELECT COUNT(url) FROM images_bank WHERE was_used = False")
             return cursor.fetchone()
 
 
-def get_random_link(db_path):
+def get_random_link():
     not_used_number, random_link = None, None
-    with create_connection(db_path=db_path) as connection:
-        connection.row_factory = lambda c, row: row[0]
+    with create_connection() as connection:
         cursor = connection.cursor()
-
         try:
-            cursor.execute("SELECT * "
-                           "FROM (SELECT url FROM images_bank WHERE was_used = 0 ORDER BY RANDOM() LIMIT 1) "
-                           "UNION "
-                           "SELECT * "
-                           "FROM (SELECT COUNT(url) FROM images_bank WHERE was_used = 0)")
+            cursor.execute("SELECT url FROM images_bank WHERE was_used = False ORDER BY RANDOM() LIMIT 1")
         except Error:
             data_logger.error(msg=Error)
         else:
-            not_used_number, random_link = tuple(cursor.fetchall())
+            random_link = cursor.fetchone()[0]
             if random_link:
-                cursor.execute("UPDATE images_bank SET was_used = 1 WHERE url = ?", (random_link,))
+                cursor.execute("UPDATE images_bank SET was_used = %s WHERE url = %s", (True, random_link))
                 connection.commit()
-    return not_used_number, random_link
+                cursor.execute("SELECT COUNT(url) FROM images_bank WHERE was_used = False")
+                not_used_number = cursor.fetchone()[0]
+    return not_used_number, random_link.strip()

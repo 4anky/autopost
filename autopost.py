@@ -30,8 +30,8 @@ def hash_tags_from_file(file):
     return " ".join(res)
 
 
-def save_image(url, db_path):
-    not_used_number, link = data.get_random_link(db_path=db_path)
+def save_image(url):
+    not_used_number, link = data.get_random_link()
     image_path = f"{data.IMAGE_NAME}{link[-4:]}"
     with open(file=image_path, mode="wb") as file:
         file.write(get(url=f"{url}{link}").content)
