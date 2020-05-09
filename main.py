@@ -1,37 +1,25 @@
-import logging
-from os import path
+import configparser
 
-import image_parser
-import autopost
-import data
+import synceyes
 
 
-logging.basicConfig(level=logging.INFO)
+config = configparser.ConfigParser()
+config.read(filenames="config/config.ini")
 
-script_name = path.basename(__file__)
-main_logger = logging.getLogger(name=script_name)
-main_logger.setLevel(level=logging.INFO)
+main_logger = synceyes.create_logger()
 
-file_handler = logging.FileHandler(filename=f"logs/{path.splitext(script_name)[0]}.log")
-formatter = logging.Formatter(fmt="%(asctime)s - %(name)s - %(levelname)s — %(funcName)s:%(lineno)d - %(message)s")
-file_handler.setFormatter(fmt=formatter)
+Database = synceyes.Database(database=config['database'])
+Poster = synceyes.Poster(database=config['database'], vk=config['vk'], site=config['site'], local=config['local'])
+Parser = synceyes.Parser(site=config['site'])
 
-main_logger.addHandler(hdlr=file_handler)
-
-data.set_variables()
-not_used_number, image = autopost.save_image(url=data.URL)
+not_used_number, image = Poster.save_image()
 
 if image:
-    autopost.add_post(login=data.LOGIN,
-                      password=data.PASSWORD,
-                      group_id=data.GROUP_ID,
-                      image_name=image,
-                      message=autopost.hash_tags_from_file(file=data.HT_FILE))
-    autopost.delete_image(image_name=image)
+    Poster.add_post()
+    Poster.delete_image()
 
 if not_used_number < 2000:
-    image_links = image_parser.get_images_from_2ch_section(url=data.URL, section=data.PARTITION)
-    not_used_now = data.links_to_db(links=image_links)
+    not_used_now = Database.links_to_db(links=Parser.get_images())
     if not_used_now - not_used_number:
         main_logger.info(msg=f"Число изображений в Банке увеличилось с {not_used_number} до {not_used_now} штук")
     else:
