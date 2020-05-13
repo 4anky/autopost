@@ -7,7 +7,7 @@ import psycopg2
 import requests
 import vk_api
 from vk_api import exceptions
-from psycopg2 import Error
+from psycopg2.errors import lookup
 
 
 def create_logger():
@@ -46,17 +46,15 @@ class Database(object):
 
     def links_to_db(self, links):
         with self.create_connection() as connection:
-            connection.row_factory = lambda c, row: row[0]
             cursor = connection.cursor()
-            try:
-                for link in links:
-                    cursor.execute("INSERT OR IGNORE INTO images_bank(url, was_used) VALUES ($1, $2)", (link, False))
-            except Error:
-                self.logger.error(msg=Error)
-            else:
-                connection.commit()
-                cursor.execute("SELECT COUNT(url) FROM images_bank WHERE was_used = False")
-                return cursor.fetchone()
+            for link in links:
+                try:
+                    cursor.execute("INSERT INTO images_bank VALUES (%s, %s)", (link, False))
+                except lookup(code="23505"):
+                    connection.rollback()
+            connection.commit()
+            cursor.execute("SELECT COUNT(url) FROM images_bank WHERE was_used = %s", (False, ))
+            return cursor.fetchone()[0]
 
     def get_random_link(self):
         not_used_number, random_link = None, None
@@ -64,8 +62,8 @@ class Database(object):
             cursor = connection.cursor()
             try:
                 cursor.execute("SELECT url FROM images_bank WHERE was_used = False ORDER BY RANDOM() LIMIT 1")
-            except Error:
-                self.logger.error(msg=Error)
+            except psycopg2.OperationalError:
+                self.logger.error(msg=psycopg2.OperationalError)
             else:
                 random_link = cursor.fetchone()[0]
                 if random_link:
@@ -142,7 +140,7 @@ class Poster(Database):
 
 class Parser(object):
     def __init__(self, site=None):
-        self.url = site['url'],
+        self.url = site['url']
         self.section = site['section']
 
         self.logger = logging.getLogger(__name__)
