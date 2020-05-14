@@ -12,9 +12,9 @@ Database = synceyes.Database(database=config['database'])
 Poster = synceyes.Poster(database=config['database'], vk=config['vk'], site=config['site'], local=config['local'])
 Parser = synceyes.Parser(site=config['site'])
 
-not_used_number, image = Poster.save_image()
+not_used_number, is_saved = Poster.save_image()
 
-if image:
+if is_saved:
     Poster.add_post()
     Poster.delete_image()
 
