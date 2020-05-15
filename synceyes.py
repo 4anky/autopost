@@ -2,7 +2,6 @@
 """
 :authors: 4anky
 """
-
 import itertools
 import logging
 import os
@@ -270,7 +269,7 @@ class Parser(object):
         """
 
         self.url = site['url']
-        self.section = site['section']
+        self.sections = site['sections'].split(", ")
 
         self.logger = logging.getLogger(__name__)
 
@@ -293,34 +292,38 @@ class Parser(object):
         return False
 
     def get_images(self):
-        """В указанной секции сайта ищет URL всех изображений.
-        Указание секции для поиска производится в конфигурационном файле.
+        """В указанных секциях сайта ищет все URL изображений.
+        Указание секций для поиска производится в конфигурационном файле.
 
         :return: набор уникальных URL изображений
         :rtype: set
         """
 
-        threads_no = set()
-        links = set()
+        links = []
 
-        # Получаем номера всех тредов в указанной секции 2ch.hk
-        for page in itertools.count(start=1, step=1):
-            response = requests.get(url=f"{self.url}/{self.section}/{page}.json")
-            if response.status_code == 200:
-                threads = response.json()['threads']
-                for thread in threads:
-                    threads_no.add(thread['thread_num'])
-            else:
-                if page == 1:
-                    self.logger.error(msg=f"Парсер не посетил ни одной страницы (status_code: {response.status_code})")
-                break
+        for section in self.sections:
+            threads_no = []
 
-        # Получаем url всех картинок из каждого треда
-        for thread in threads_no:
-            thread = requests.get(url=f"{self.url}/{self.section}/res/{thread}.json").json()
-            posts = thread['threads'][0]['posts']
-            for post in posts:
-                for media in post['files']:
-                    if self.check_vk_requirements(media_file=media):
-                        links.add(media['path'])
+            # Получаем номера всех тредов в указанной секции 2ch.hk
+            for page in itertools.count(start=1, step=1):
+                response = requests.get(url=f"{self.url}/{section}/{page}.json")
+                if response.status_code == 200:
+                    threads = response.json()['threads']
+                    for thread in threads:
+                        threads_no.append(thread['thread_num'])
+                else:
+                    if page == 1:
+                        self.logger.error(
+                            msg=f"Парсер не посетил ни одной страницы (status_code: {response.status_code})"
+                        )
+                    break
+
+            # Получаем url всех картинок из каждого треда
+            for thread in threads_no:
+                thread = requests.get(url=f"{self.url}/{section}/res/{thread}.json").json()
+                posts = thread['threads'][0]['posts']
+                for post in posts:
+                    for media in post['files']:
+                        if self.check_vk_requirements(media_file=media):
+                            links.append(media['path'])
         return links

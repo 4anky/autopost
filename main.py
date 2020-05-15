@@ -18,7 +18,7 @@ if is_saved:
     Poster.add_post()
     Poster.delete_image()
 
-if not_used_number < 2000:
+if not_used_number < 20_000:
     not_used_now = Database.links_to_db(links=Parser.get_images())
     if not_used_now - not_used_number:
         main_logger.info(msg=f"Число изображений в Банке увеличилось с {not_used_number} до {not_used_now} штук")
